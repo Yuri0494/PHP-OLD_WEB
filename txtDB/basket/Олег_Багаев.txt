@@ -1,0 +1,1 @@
+a:5:{s:4:"name";s:8:"Олег";s:7:"surname";s:12:"Багаев";s:5:"photo";s:20:"txtDB/photos/cat.jpg";s:8:"birthday";s:10:"29.01.1965";s:10:"typeOfCard";s:1:"1";}

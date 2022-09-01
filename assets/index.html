@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>New Framework</title>
+  </head>
+  <body>
+    <div class="root"></div>
+    <script>
+      let state = {
+        time: new Date(),
+        lots: [
+          {
+            id: 1,
+            name: "Apple",
+            descritpion: "Apple desc",
+            price: 16,
+          },
+          {
+            id: 2,
+            name: "Orange",
+            descritpion: "Orange desc",
+            price: 41,
+          },
+        ],
+      };
+
+      function Header() {
+        const header = document.createElement("header");
+        header.className = "header";
+        header.append(Logo());
+        return header;
+      }
+
+      function Logo() {
+        const logo = document.createElement("img");
+        logo.className = "logo";
+        logo.src = "./assets/photos/cat.jpg";
+        return logo;
+      }
+
+      function Clock({ time }) {
+        const clock = document.createElement("div");
+        clock.className = "clock";
+        clock.innerHTML = time.toLocaleTimeString();
+        return clock;
+      }
+
+      function Lots(lots) {
+        const list = document.createElement("div");
+        list.className = "lots";
+
+        lots.forEach((lot) => {
+          const node = document.createElement("article");
+          node.className = "lot";
+
+          const name = document.createElement("h1");
+          name.innerText = lot.name;
+          node.append(name);
+
+          const descritpion = document.createElement("p");
+          descritpion.innerText = lot.descritpion;
+          node.append(descritpion);
+
+          const price = document.createElement("div");
+          price.className = "price";
+          price.innerText = lot.price;
+          node.append(price);
+
+          list.append(node);
+        });
+        return list;
+      }
+
+      function App(st) {
+        const app = document.createElement("div");
+        app.className = "app";
+        app.append(Header());
+        app.append(
+          Clock({
+            time: st.time,
+          })
+        );
+        app.append(Lots(st.lots));
+        return app;
+      }
+
+      function render(root, app) {
+        root.append(app);
+      }
+
+      function renderView(state) {
+        let z = document.querySelector(".root");
+        secondRender(App(state), z);
+      }
+
+      render(document.querySelector(".root"), App(state));
+
+      setInterval(() => {
+        let newState = {};
+        Object.assign(newState, state, { time: new Date() });
+        renderView(newState);
+      }, 1000);
+
+      /************************************ API ************************************/
+      const api = {
+        get(url) {
+          switch (url) {
+            case "/lots":
+              return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                  resolve([
+                    {
+                      id: 1,
+                      name: "Apple",
+                      descritpion: "Apple description",
+                      price: 50,
+                    },
+                    {
+                      id: 2,
+                      name: "Orange",
+                      descritpion: "Orange description",
+                      price: 50,
+                    },
+                  ]);
+                }, 1000);
+              });
+          }
+        },
+      };
+
+      const stream = {
+        subscribe(channel, listener) {
+          const match = /price-(\d+)/.exec(channel);
+          if (match) {
+            setInterval(() => {
+              listener({
+                id: parseInt(match[1]),
+                price: Math.round(Math.random() * 10 + 30),
+              });
+            }, 400);
+          }
+        },
+      };
+
+      api.get("/lots").then((lots) => {
+        state = {
+          ...state,
+          lots,
+        };
+        renderView(state);
+
+        const onePrice = (data) => {
+          state = {
+            ...state,
+            lots: state.lots.map((lot) => {
+              if (lot.id === data.id) {
+                return {
+                  ...lot,
+                  price: data.price,
+                };
+              }
+              return lot;
+            }),
+          };
+          renderView(state);
+        };
+
+        lots.forEach((lot) => {
+          stream.subscribe(`price-${lot.id}`, onePrice);
+        });
+      });
+
+      function secondRender(virtualDom, realDomRoot) {
+        const virtualDomRoot = document.createElement(realDomRoot.tagName);
+        virtualDomRoot.className = realDomRoot.className;
+        virtualDomRoot.appendChild(virtualDom);
+        sync(virtualDomRoot, realDomRoot);
+      }
+
+      function sync(virtualNode, realNode) {
+        if (virtualNode.id !== realNode.id) {
+          realNode.id = virtualNode.id;
+        }
+        if (virtualNode.className !== realNode.className) {
+          realNode.className = virtualNode.className;
+        }
+        if (virtualNode.attributes) {
+          Array.from(virtualNode.attributes).forEach((attr) => {
+            realNode[attr.name] = attr.value;
+          });
+        }
+        if (virtualNode.nodeValue !== realNode.nodeValue) {
+          realNode.nodeValue = virtualNode.nodeValue;
+        }
+
+        const virtualChildren = virtualNode.childNodes;
+        const realChildren = realNode.childNodes;
+
+        let length =
+          realChildren.length > virtualChildren.length
+            ? realChildren.length
+            : virtualChildren.length;
+
+        for (let i = 0; i < length; i++) {
+          let virtual = virtualChildren[i];
+          let real = realChildren[i];
+
+          //remove
+          if (virtual === undefined && real !== undefined) {
+            realNode.remove(real);
+          }
+
+          //update
+          if (
+            virtual !== undefined &&
+            real !== undefined &&
+            virtual.tagName === real.tagName
+          ) {
+            sync(virtual, real);
+          }
+
+          if (virtual !== undefined && real === undefined) {
+            const newReal = createRealNodeByVirtual(virtual);
+            sync(virtual, real);
+          }
+          //add
+          if (virtual !== undefined && real === undefined) {
+            const newReal = createRealNodeByVirtual(virtual);
+            sync(virtual, newReal);
+            realNode.appendChild(newReal);
+          }
+        }
+      }
+
+      function createRealNodeByVirtual(virtual) {
+        if (virtual.nodeType === Node.TEXT_NODE) {
+          return document.createTextNode("");
+        } else {
+          return document.createElement(virtual.tagName);
+        }
+      }
+    </script>
+  </body>
+</html>

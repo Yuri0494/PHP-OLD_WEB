@@ -1,0 +1,17 @@
+{
+    "name": "bagaev/myfolder",
+    "autoload": {
+        "psr-4": {
+            "Bagaev\\Myfolder\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "bagayev.y",
+            "email": "bagayev.y@divan.ru"
+        }
+    ],
+    "require": {
+        "cviebrock/eloquent-sluggable": "^9.0"
+    }
+}
